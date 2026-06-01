@@ -1,12 +1,114 @@
 'use client';
 
+import { useState } from 'react';
+
 const TIMINGS = [
   { day: 'Monday – Friday', morning: '9:00 AM – 1:00 PM', evening: '4:00 PM – 7:00 PM' },
   { day: 'Saturday', morning: '9:00 AM – 1:00 PM', evening: '4:00 PM – 6:00 PM' },
   { day: 'Sunday', morning: '10:00 AM – 12:00 PM', evening: 'Emergency Only' },
 ];
 
+interface ContactFormData {
+  name: string;
+  mobile: string;
+  email: string;
+  message: string;
+}
+
+const BLANK_FORM: ContactFormData = {
+  name: '',
+  mobile: '',
+  email: '',
+  message: '',
+};
+
 export default function ContactSection() {
+  const [form, setForm] = useState<ContactFormData>(BLANK_FORM);
+  const [errors, setErrors] = useState<Partial<ContactFormData>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [apiSuccessMsg, setApiSuccessMsg] = useState('');
+
+  const validate = (): boolean => {
+    const e: Partial<ContactFormData> = {};
+    if (!form.name.trim()) {
+      e.name = 'Name is required';
+    } else if (form.name.trim().length < 2) {
+      e.name = 'Name must be at least 2 characters';
+    }
+
+    if (!form.mobile.trim()) {
+      e.mobile = 'Mobile number is required';
+    } else if (!/^[6-9]\d{9}$/.test(form.mobile.trim())) {
+      e.mobile = 'Enter a valid 10-digit Indian mobile number';
+    }
+
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      e.email = 'Enter a valid email address';
+    }
+
+    if (form.message.trim() && form.message.trim().length > 1000) {
+      e.message = 'Message must be less than 1000 characters';
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+    setApiError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    setApiError('');
+
+    try {
+      const payload = {
+        name: form.name.trim(),
+        mobile: form.mobile.trim(),
+        email: form.email.trim() || undefined,
+        message: form.message.trim() || undefined,
+      };
+
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setApiSuccessMsg(data.message || 'Thank you for reaching out!');
+        setSubmitted(true);
+      } else {
+        setApiError(data.error || 'Failed to send message. Please try again.');
+      }
+    } catch {
+      setApiError('Network error. Please try again or contact us directly.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setForm(BLANK_FORM);
+    setErrors({});
+    setApiError('');
+    setApiSuccessMsg('');
+  };
+
+  const inputClass = (field: keyof ContactFormData) =>
+    `form-input w-full ${errors[field] ? 'border-red-500/50' : ''}`;
+
   return (
     <section
       id="contact"
@@ -92,79 +194,187 @@ export default function ContactSection() {
           </div>
         </div>
 
-        {/* Map placeholder + Timings */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Map */}
-          <div
-            className="rounded-2xl overflow-hidden relative"
-            style={{ height: 320, background: 'linear-gradient(135deg, #0f2060 0%, #1a3080 100%)', border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            {/* Embedded map placeholder styled premium */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div className="text-6xl">🗺️</div>
-              <div className="text-center">
-                <p className="text-white font-bold text-lg">Dr. Bharat Bhushan Clinic</p>
-                <p className="text-white/60 text-sm">Rajasthan, India</p>
+        {/* Map, Timings & Contact Form Row */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          {/* Left Side: Map + Timings */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Map */}
+            <div
+              className="rounded-2xl overflow-hidden relative"
+              style={{ height: 280, background: 'linear-gradient(135deg, #0f2060 0%, #1a3080 100%)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              {/* Embedded map placeholder styled premium */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                <div className="text-5xl">🗺️</div>
+                <div className="text-center px-4">
+                  <p className="text-white font-bold text-base">Dr. Bharat Bhushan Clinic</p>
+                  <p className="text-white/60 text-xs">Rajasthan, India</p>
+                </div>
+                <a
+                  href="https://maps.google.com/?q=Rajasthan+India"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary !py-2 !px-4 !text-xs"
+                >
+                  View on Google Maps
+                </a>
               </div>
-              <a
-                href="https://maps.google.com/?q=Rajasthan+India"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary !py-2 !px-5 !text-sm"
-              >
-                View on Google Maps
-              </a>
+              {/* Grid decoration */}
+              <div className="absolute inset-0 hero-grid-bg opacity-20" />
             </div>
-            {/* Grid decoration */}
-            <div className="absolute inset-0 hero-grid-bg opacity-20" />
-          </div>
 
-          {/* Timings */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
-              <span>⏰</span> Clinic Timings
-            </h3>
-            <div className="space-y-4">
-              {TIMINGS.map((t) => (
-                <div key={t.day} className="flex items-start gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0">
-                  <div
-                    className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                    style={{ background: t.day.includes('Sunday') ? '#f97316' : '#2dd4bf' }}
-                  />
-                  <div className="flex-1">
-                    <p className="font-semibold text-white text-sm">{t.day}</p>
-                    <div className="flex flex-wrap gap-3 mt-1">
-                      <span className="text-xs text-white/60">🌅 {t.morning}</span>
-                      <span className="text-xs text-white/60">🌆 {t.evening}</span>
+            {/* Timings */}
+            <div className="glass-card rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span>⏰</span> Clinic Timings
+              </h3>
+              <div className="space-y-3.5">
+                {TIMINGS.map((t) => (
+                  <div key={t.day} className="flex items-start gap-3 pb-3 border-b border-white/5 last:border-0 last:pb-0">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
+                      style={{ background: t.day.includes('Sunday') ? '#f97316' : '#2dd4bf' }}
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold text-white text-xs">{t.day}</p>
+                      <div className="flex flex-wrap gap-2 mt-0.5">
+                        <span className="text-[11px] text-white/60">🌅 {t.morning}</span>
+                        <span className="text-[11px] text-white/60">🌆 {t.evening}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div
-              className="mt-6 rounded-xl p-4 flex items-center gap-3"
-              style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)' }}
-            >
-              <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
-              <p className="text-white/80 text-sm">
-                <span className="font-semibold text-green-400">Available Now</span> · Book via WhatsApp for instant confirmation
-              </p>
-            </div>
-
-            <div className="flex gap-3 mt-4">
-              <a href="tel:+918696352862" className="btn-primary flex-1 !justify-center !text-sm !py-2.5">
-                📞 Call
-              </a>
-              <a
-                href="https://wa.me/918696352862"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-whatsapp flex-1 !justify-center !text-sm !py-2.5"
+              <div
+                className="mt-4 rounded-xl p-3 flex items-center gap-3"
+                style={{ background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.15)' }}
               >
-                💬 WhatsApp
-              </a>
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
+                <p className="text-white/80 text-xs">
+                  <span className="font-semibold text-green-400">Available Now</span> · Contact on WhatsApp for query support
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Right Side: Contact Form */}
+          <div className="lg:col-span-7 glass-card rounded-2xl p-8" id="contact-form-container">
+            {submitted ? (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-6" style={{ background: 'rgba(52,211,153,0.15)', border: '2px solid rgba(52,211,153,0.4)' }}>
+                  📨
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Message Sent!</h3>
+                <p className="text-white/70 max-w-md mx-auto mb-6">
+                  {apiSuccessMsg}
+                </p>
+                <button onClick={handleReset} className="btn-secondary">
+                  Send Another Message
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-white mb-1">Send us a Message</h3>
+                <p className="text-white/50 text-sm mb-6">Have questions or want to discuss clinical consulting? Write to us.</p>
+                
+                <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                  {/* Name Input */}
+                  <div>
+                    <label className="form-label" htmlFor="contact-name">Full Name *</label>
+                    <input
+                      id="contact-name"
+                      name="name"
+                      type="text"
+                      placeholder="Enter your name"
+                      value={form.name}
+                      onChange={handleChange}
+                      className={inputClass('name')}
+                      autoComplete="name"
+                    />
+                    {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                  </div>
+
+                  {/* Mobile Input */}
+                  <div>
+                    <label className="form-label" htmlFor="contact-mobile">Mobile Number *</label>
+                    <input
+                      id="contact-mobile"
+                      name="mobile"
+                      type="tel"
+                      placeholder="10-digit mobile number"
+                      value={form.mobile}
+                      onChange={handleChange}
+                      className={inputClass('mobile')}
+                      maxLength={10}
+                      autoComplete="tel"
+                    />
+                    {errors.mobile && <p className="text-red-400 text-xs mt-1">{errors.mobile}</p>}
+                  </div>
+
+                  {/* Email Input */}
+                  <div>
+                    <label className="form-label" htmlFor="contact-email">Email Address (Optional)</label>
+                    <input
+                      id="contact-email"
+                      name="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={handleChange}
+                      className={inputClass('email')}
+                      autoComplete="email"
+                    />
+                    {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+                  </div>
+
+                  {/* Message Input */}
+                  <div>
+                    <label className="form-label" htmlFor="contact-message">Your Message (Optional)</label>
+                    <textarea
+                      id="contact-message"
+                      name="message"
+                      rows={4}
+                      placeholder="How can we help you?"
+                      value={form.message}
+                      onChange={handleChange}
+                      className={`form-input w-full resize-none ${errors.message ? 'border-red-500/50' : ''}`}
+                      maxLength={1000}
+                    />
+                    {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
+                  </div>
+
+                  {/* API Error Box */}
+                  {apiError && (
+                    <div className="p-3 rounded-xl text-red-400 text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                      ⚠️ {apiError}
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="btn-primary w-full justify-center !py-3.5 !text-base"
+                    id="submit-contact-btn"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Message
+                      </>
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

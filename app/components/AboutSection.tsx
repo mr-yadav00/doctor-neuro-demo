@@ -51,6 +51,7 @@ export default function AboutSection() {
                 src="/clinic-interior.png"
                 alt="Dr. Bharat Bhushan – Neurology Clinic"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
                 className="object-cover"
               />
               <div

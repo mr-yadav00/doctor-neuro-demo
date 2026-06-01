@@ -103,6 +103,7 @@ export default function GallerySection() {
                 src={item.src}
                 alt={item.alt}
                 fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 400px"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
               {/* Overlay */}
@@ -149,6 +150,7 @@ export default function GallerySection() {
                 src={lightbox}
                 alt="Gallery Image"
                 fill
+                sizes="(max-width: 1024px) 100vw, 896px"
                 className="object-contain"
               />
             </div>

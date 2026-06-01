@@ -143,6 +143,7 @@ export default function HeroSection() {
                   src="/doctor-hero.png"
                   alt="Dr. Bharat Bhushan - Neurologist Rajasthan"
                   fill
+                  sizes="(max-width: 450px) 100vw, 420px"
                   className="object-cover"
                   priority
                 />
