@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import type { Appointment } from '@/types';
 import { formatDate, formatTimeLabel } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@sitelabindia.in';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@sitelabindia.in';
@@ -15,7 +15,7 @@ const CLINIC_WHATSAPP = 'https://wa.me/918696352862';
 export async function sendPatientConfirmationEmail(
   appointment: Appointment
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!resend) {
     console.warn('[Email] RESEND_API_KEY not set — skipping patient confirmation email');
     return;
   }
@@ -103,7 +103,7 @@ export async function sendPatientConfirmationEmail(
 export async function sendAdminNotificationEmail(
   appointment: Appointment
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!resend) {
     console.warn('[Email] RESEND_API_KEY not set — skipping admin notification email');
     return;
   }
